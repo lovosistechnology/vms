@@ -1,0 +1,642 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Overview of all cameras, today's visits, and system alerts{% endblock %}
+
+{% block header_actions %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Button Styles - LocusVMS Aesthetic */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 11px 20px;
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: var(--transition);
+        white-space: nowrap;
+    }
+
+    .btn i {
+        font-size: 15px;
+    }
+
+    .btn-primary {
+        background: #0f172a;
+        /* Dark slate for primary actions */
+        color: #fff;
+        box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.15);
+    }
+
+    .btn-primary:hover {
+        background: var(--primary);
+        /* Turns emerald on hover */
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px -4px var(--primary-glow);
+    }
+
+    .btn-secondary {
+        background: var(--card);
+        color: var(--text-heading);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .btn-secondary:hover {
+        background: var(--bg);
+        border-color: #cbd5e1;
+    }
+
+    .btn-sm {
+        padding: 8px 14px;
+        font-size: 13px;
+        border-radius: var(--radius-sm);
+    }
+
+    /* Card Styles */
+    .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        transition: var(--transition);
+    }
+
+    .card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+
+    .card-header {
+        padding: 22px 24px;
+        border-bottom: 1px solid var(--border-light);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .card-header h2 {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-heading);
+        margin: 0;
+    }
+
+    .card-header p {
+        font-size: 13px;
+        color: var(--muted);
+        margin: 4px 0 0;
+    }
+
+    .card-body {
+        padding: 24px;
+    }
+
+    .mb-4 {
+        margin-bottom: 24px;
+    }
+
+    /* Statistics Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        margin-bottom: 28px;
+    }
+
+    .stat-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 22px;
+        box-shadow: var(--shadow-md);
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--primary);
+        opacity: 0;
+        transition: var(--transition);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .stat-card:hover::before {
+        opacity: 1;
+    }
+
+    .stat-card.success::before {
+        background: var(--success);
+    }
+
+    .stat-card.warning::before {
+        background: var(--warning);
+    }
+
+    .stat-card.info::before {
+        background: var(--secondary);
+    }
+
+    .stat-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 14px;
+    }
+
+    .stat-label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+    }
+
+    .stat-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: var(--radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+
+    /* Updated Icon Colors to match Emerald Theme */
+    .stat-icon.primary {
+        background: rgba(16, 185, 129, 0.12);
+        color: var(--primary);
+    }
+
+    .stat-icon.success {
+        background: var(--success-light);
+        color: #059669;
+    }
+
+    .stat-icon.warning {
+        background: var(--warning-light);
+        color: #d97706;
+    }
+
+    .stat-icon.info {
+        background: rgba(14, 165, 233, 0.12);
+        color: #0284c7;
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--text-heading);
+        line-height: 1;
+        margin-bottom: 6px;
+    }
+
+    .stat-meta {
+        font-size: 13px;
+        color: var(--muted);
+    }
+
+    /* Badges */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: var(--radius-full);
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .badge::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+
+    .badge-online {
+        background: var(--success-light);
+        color: #059669;
+    }
+
+    .badge-online::before {
+        background: var(--success);
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-offline {
+        background: rgba(100, 116, 139, 0.12);
+        color: var(--muted);
+    }
+
+    .badge-offline::before {
+        background: var(--muted-light);
+    }
+
+    .badge-error {
+        background: var(--danger-light);
+        color: #dc2626;
+    }
+
+    .badge-error::before {
+        background: var(--danger);
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+    }
+
+    /* Attire Pills */
+    .attire-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: var(--radius-full);
+        font-size: 12px;
+        font-weight: 600;
+        margin: 0 6px 6px 0;
+    }
+
+    .attire-arabic_male {
+        background: rgba(16, 185, 129, 0.12);
+        color: #047857;
+    }
+
+    /* Changed to Emerald */
+    .attire-arabic_female {
+        background: rgba(236, 72, 153, 0.12);
+        color: #be185d;
+    }
+
+    .attire-modern_dress {
+        background: rgba(14, 165, 233, 0.12);
+        color: #0284c7;
+    }
+
+    .attire-unknown {
+        background: rgba(148, 163, 184, 0.2);
+        color: #475569;
+    }
+
+    /* Camera Grid */
+    .camera-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+    }
+
+    .camera-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 22px;
+        box-shadow: var(--shadow-md);
+        transition: var(--transition);
+    }
+
+    .camera-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .camera-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 14px;
+    }
+
+    .camera-card h3 {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-heading);
+        margin: 0 0 4px;
+    }
+
+    .camera-card-meta {
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    .camera-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin: 16px 0;
+        padding: 16px;
+        background: var(--bg);
+        border-radius: var(--radius);
+    }
+
+    .camera-metric {
+        text-align: center;
+    }
+
+    .camera-metric strong {
+        display: block;
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text-heading);
+    }
+
+    .camera-metric span {
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    /* Empty States */
+    .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--muted);
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        margin-bottom: 16px;
+        color: var(--border);
+    }
+
+    .empty-state h3 {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-heading);
+        margin-bottom: 6px;
+    }
+
+    /* Alert List */
+    .alert-list {
+        list-style: none;
+    }
+
+    .alert-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 18px;
+        border-radius: var(--radius);
+        background: var(--bg);
+        margin-bottom: 12px;
+        border: 1px solid var(--border-light);
+        transition: var(--transition);
+    }
+
+    .alert-item:hover {
+        background: #fff;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .alert-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius);
+        background: var(--danger-light);
+        color: var(--danger);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .alert-content {
+        flex: 1;
+    }
+
+    .alert-content strong {
+        display: block;
+        font-size: 14px;
+        color: var(--text-heading);
+        margin-bottom: 4px;
+    }
+
+    .alert-content p {
+        font-size: 13px;
+        color: var(--muted);
+        margin: 0 0 6px;
+    }
+
+    .alert-content small {
+        font-size: 12px;
+        color: var(--muted-light);
+    }
+
+    /* Utilities */
+    .text-muted {
+        color: var(--muted);
+    }
+
+    .d-flex {
+        display: flex;
+    }
+
+    .align-center {
+        align-items: center;
+    }
+
+    .gap-2 {
+        gap: 8px;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .camera-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card info">
+        <div class="stat-header">
+            <div>
+                <div class="stat-label">Total Cameras</div>
+                <div class="stat-value">{{ total_cameras }}</div>
+                <div class="stat-meta">Connected devices</div>
+            </div>
+            <div class="stat-icon info">
+                <i class="fa-solid fa-video"></i>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card success">
+        <div class="stat-header">
+            <div>
+                <div class="stat-label">Today's Visits</div>
+                <div class="stat-value">{{ total_visits }}</div>
+                <div class="stat-meta">Tracked today</div>
+            </div>
+            <div class="stat-icon success">
+                <i class="fa-solid fa-users"></i>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card warning">
+        <div class="stat-header">
+            <div>
+                <div class="stat-label">Known Persons</div>
+                <div class="stat-value">{{ total_person_profiles }}</div>
+                <div class="stat-meta">Unique profiles</div>
+            </div>
+            <div class="stat-icon warning">
+                <i class="fa-solid fa-id-card"></i>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card info">
+        <div class="stat-header">
+            <div>
+                <div class="stat-label">AI Hardware Mode</div>
+                <div class="stat-value" style="font-size: 18px; margin-top: 4px; font-weight: 700;">{{ ai_hardware.acceleration_mode }}</div>
+                <div class="stat-meta">PyTorch {{ ai_hardware.torch_version }} | OpenCV {{ ai_hardware.opencv_version }}</div>
+            </div>
+            <div class="stat-icon info">
+                <i class="fa-solid fa-microchip"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if total_attire_counts %}
+<div class="card mb-4">
+    <div class="card-header">
+        <div>
+            <h2><i class="fa-solid fa-shirt text-muted" style="margin-right: 8px;"></i>Today's Attire Breakdown</h2>
+        </div>
+    </div>
+    <div class="card-body">
+        {% for attire, count in total_attire_counts.items %}
+        <span class="attire-pill attire-{{ attire }}">
+            <i class="fa-solid fa-circle" style="font-size: 6px; vertical-align: middle;"></i>
+            {% if attire == 'arabic_male' %}Arabic dress (Thobe/Kandura){% elif attire == 'arabic_female' %}Arabic dress (Abaya){% elif attire == 'modern_dress' %}Modern dress{% else %}Unknown{% endif %}
+            <strong style="margin-left: 4px;">{{ count }}</strong>
+        </span>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="card mb-4">
+    <div class="card-header">
+        <div>
+            <h2><i class="fa-solid fa-video text-muted" style="margin-right: 8px;"></i>Cameras</h2>
+            <p>Monitor status and activity for each connected camera</p>
+        </div>
+        <a href="{% url 'core:cameras' %}" class="btn btn-secondary btn-sm">Manage Cameras</a>
+    </div>
+    <div class="card-body">
+        <div class="camera-grid">
+            {% for item in cameras %}
+            <div class="camera-card">
+                <div class="camera-card-header">
+                    <div>
+                        <h3>{{ item.camera.name }}</h3>
+                        <div class="camera-card-meta">{{ item.camera.get_source_type_display }}</div>
+                    </div>
+                    <span
+                        class="badge {% if item.camera.status == 'online' %}badge-online{% elif item.camera.status == 'offline' %}badge-offline{% else %}badge-error{% endif %}">
+                        {{ item.camera.get_status_display }}
+                    </span>
+                </div>
+
+                <div class="camera-metrics">
+                    <div class="camera-metric">
+                        <strong>{{ item.today_visits }}</strong>
+                        <span>Today's Visits</span>
+                    </div>
+                    <div class="camera-metric">
+                        <strong>{{ item.person_profiles }}</strong>
+                        <span>Known Persons</span>
+                    </div>
+                </div>
+
+                {% if item.attire_counts %}
+                <div style="margin-bottom: 14px;">
+                    {% for attire, count in item.attire_counts.items %}
+                    <span class="attire-pill attire-{{ attire }}">
+                        {% if attire == 'arabic_male' %}Arabic{% elif attire == 'arabic_female' %}Abaya{% elif attire == 'modern_dress' %}Modern{% else %}Unknown{% endif %}: {{ count }}
+                    </span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <a href="{% url 'core:live_camera' item.camera.pk %}" class="btn btn-primary btn-sm"
+                    style="width: 100%;">
+                    <i class="fa-solid fa-eye"></i> Open Live View
+                </a>
+            </div>
+            {% empty %}
+            <div class="empty-state" style="grid-column: 1 / -1;">
+                <i class="fa-solid fa-video-slash"></i>
+                <h3>No cameras configured</h3>
+                <p>Add your first camera to start monitoring.</p>
+                <a href="{% url 'core:cameras' %}" class="btn btn-primary" style="margin-top: 16px;">
+                    <i class="fa-solid fa-plus"></i> Add Camera
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h2><i class="fa-solid fa-bell text-muted" style="margin-right: 8px;"></i>System Alerts</h2>
+            <p>Recent issues requiring your attention</p>
+        </div>
+        {% if alerts %}
+        <span class="badge badge-error">{{ alerts|length }} Active</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if alerts %}
+        <ul class="alert-list">
+            {% for alert in alerts %}
+            <li class="alert-item">
+                <div class="alert-icon">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="alert-content">
+                    <strong>{{ alert.title }}</strong>
+                    <p>{{ alert.message }}</p>
+                    <small><i class="fa-regular fa-clock"></i> {{ alert.created_at }}</small>
+                </div>
+                <a href="{% url 'core:acknowledge_alert' alert.pk %}" class="btn btn-secondary btn-sm">Acknowledge</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state">
+            <i class="fa-regular fa-circle-check" style="color: var(--success);"></i>
+            <h3>All clear</h3>
+            <p>No active system alerts. Everything is running smoothly.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

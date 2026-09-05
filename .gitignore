@@ -1,0 +1,34 @@
+# Byte-compiled / optimized / DLL files (Full __pycache__)
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Django Migrations
+**/migrations/*
+!**/migrations/__init__.py
+
+# Caches
+.cache/
+.pytest_cache/
+
+# Databases
+*.sqlite3
+*.db
+
+# Media & Static Files (All staticfiles and media directories across the project)
+media/
+**/media/
+staticfiles/
+**/staticfiles/
+
+# Logs
+*.log
+logs/
+
+# IDE / OS specific
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+

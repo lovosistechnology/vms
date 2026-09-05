@@ -1,0 +1,683 @@
+{% extends "base.html" %}
+
+{% block title %}Cameras{% endblock %}
+{% block page_title %}Cameras{% endblock %}
+{% block page_subtitle %}Manage your camera list and add new devices in seconds{% endblock %}
+
+{% block header_actions %}
+<button type="button" class="btn btn-primary btn-sm" id="openAddCameraModal">
+    <i class="fa-solid fa-plus"></i> Add Camera
+</button>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Button Styles - LocusVMS Aesthetic */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 11px 20px;
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: var(--transition);
+        white-space: nowrap;
+    }
+
+    .btn i {
+        font-size: 15px;
+    }
+
+    .btn-primary {
+        background: #0f172a;
+        /* Dark slate for primary actions */
+        color: #fff;
+        box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.15);
+    }
+
+    .btn-primary:hover {
+        background: var(--primary);
+        /* Turns emerald on hover */
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px -4px var(--primary-glow);
+    }
+
+    .btn-secondary {
+        background: var(--card);
+        color: var(--text-heading);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .btn-secondary:hover {
+        background: var(--bg);
+        border-color: #cbd5e1;
+    }
+
+    .btn-sm {
+        padding: 8px 14px;
+        font-size: 13px;
+        border-radius: var(--radius-sm);
+    }
+
+    /* Card Styles */
+    .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        transition: var(--transition);
+    }
+
+    .card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+
+    .card-header {
+        padding: 22px 24px;
+        border-bottom: 1px solid var(--border-light);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .card-header h2 {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-heading);
+        margin: 0;
+    }
+
+    .card-header p {
+        font-size: 13px;
+        color: var(--muted);
+        margin: 4px 0 0;
+    }
+
+    .card-body {
+        padding: 24px;
+    }
+
+    /* Badges */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: var(--radius-full);
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .badge::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+
+    .badge-online {
+        background: var(--success-light);
+        color: #059669;
+    }
+
+    .badge-online::before {
+        background: var(--success);
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-offline {
+        background: rgba(100, 116, 139, 0.12);
+        color: var(--muted);
+    }
+
+    .badge-offline::before {
+        background: var(--muted-light);
+    }
+
+    .badge-error {
+        background: var(--danger-light);
+        color: #dc2626;
+    }
+
+    .badge-error::before {
+        background: var(--danger);
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+    }
+
+    /* Attire Pills */
+    .attire-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: var(--radius-full);
+        font-size: 12px;
+        font-weight: 600;
+        margin: 0 6px 6px 0;
+    }
+
+    .attire-arabic_male {
+        background: rgba(16, 185, 129, 0.12);
+        color: #047857;
+    }
+
+    /* Changed to Emerald */
+    .attire-arabic_female {
+        background: rgba(236, 72, 153, 0.12);
+        color: #be185d;
+    }
+
+    .attire-modern_dress {
+        background: rgba(14, 165, 233, 0.12);
+        color: #0284c7;
+    }
+
+    .attire-unknown {
+        background: rgba(148, 163, 184, 0.2);
+        color: #475569;
+    }
+
+    /* Camera Grid */
+    .camera-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+    }
+
+    .camera-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 22px;
+        box-shadow: var(--shadow-md);
+        transition: var(--transition);
+    }
+
+    .camera-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .camera-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 14px;
+    }
+
+    .camera-card h3 {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-heading);
+        margin: 0 0 4px;
+    }
+
+    .camera-card-meta {
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    .camera-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin: 16px 0;
+        padding: 16px;
+        background: var(--bg);
+        border-radius: var(--radius);
+    }
+
+    .camera-metric {
+        text-align: center;
+    }
+
+    .camera-metric strong {
+        display: block;
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text-heading);
+    }
+
+    .camera-metric span {
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    /* Empty States */
+    .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--muted);
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        margin-bottom: 16px;
+        color: var(--border);
+    }
+
+    .empty-state h3 {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-heading);
+        margin-bottom: 6px;
+    }
+
+    /* Error Box */
+    .error-box {
+        background: var(--danger-light);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        color: #991b1b;
+        padding: 16px 18px;
+        border-radius: var(--radius);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .error-box i {
+        font-size: 20px;
+        margin-top: 2px;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 2000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.open {
+        display: flex;
+        opacity: 1;
+    }
+
+    .modal-card {
+        width: 100%;
+        max-width: 520px;
+        background: var(--card);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-xl);
+        transform: scale(0.95);
+        transition: transform 0.3s ease;
+        overflow: hidden;
+    }
+
+    .modal-overlay.open .modal-card {
+        transform: scale(1);
+    }
+
+    .modal-header {
+        padding: 22px 24px;
+        border-bottom: 1px solid var(--border-light);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h3 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-heading);
+        margin: 0;
+    }
+
+    .close-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: var(--radius-full);
+        border: none;
+        background: var(--bg);
+        color: var(--muted);
+        font-size: 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+    }
+
+    .close-btn:hover {
+        background: var(--danger-light);
+        color: var(--danger);
+    }
+
+    /* Form Styles */
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-heading);
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-size: 14px;
+        font-family: inherit;
+        background: var(--card);
+        color: var(--text);
+        transition: var(--transition);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    .form-check {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+    }
+
+    .form-check input {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--primary);
+    }
+
+    .form-check label {
+        font-size: 14px;
+        color: var(--text);
+        cursor: pointer;
+    }
+
+    .invalid-feedback {
+        color: var(--danger);
+        font-size: 12px;
+        margin-top: 6px;
+    }
+
+    /* Utilities */
+    .text-muted {
+        color: var(--muted);
+    }
+
+    .d-flex {
+        display: flex;
+    }
+
+    .justify-between {
+        justify-content: space-between;
+    }
+
+    .align-center {
+        align-items: center;
+    }
+
+    .gap-2 {
+        gap: 8px;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    @media (max-width: 768px) {
+        .camera-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h2><i class="fa-solid fa-video text-muted" style="margin-right: 8px;"></i>All Cameras</h2>
+            <p>{{ cameras|length }} camera{{ cameras|length|pluralize }} registered in the system</p>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="camera-grid">
+            {% for item in cameras %}
+            {% with camera=item.camera %}
+            <div class="camera-card">
+                <div class="camera-card-header">
+                    <div>
+                        <h3>{{ camera.name }}</h3>
+                        <div class="camera-card-meta">
+                            {{ camera.get_source_type_display }}
+                            {% if camera.source %}
+                            <span style="font-size: 11px; opacity: 0.8; display: block; overflow: hidden; text-overflow: ellipsis; max-width: 260px; white-space: nowrap;" title="{{ camera.source }}">
+                                {{ camera.source }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <span
+                        class="badge {% if camera.status == 'online' %}badge-online{% elif camera.status == 'offline' %}badge-offline{% else %}badge-error{% endif %}">
+                        {{ camera.get_status_display }}
+                    </span>
+                </div>
+
+                <div class="camera-metrics">
+                    <div class="camera-metric">
+                        <strong>{{ item.today_visits }}</strong>
+                        <span>Today's Visits</span>
+                    </div>
+                    <div class="camera-metric">
+                        <strong>{% if camera.enabled %}Enabled{% else %}Disabled{% endif %}</strong>
+                        <span>Status</span>
+                    </div>
+                </div>
+
+                {% if item.attire_counts %}
+                <div style="margin-bottom: 14px;">
+                    {% for attire, count in item.attire_counts.items %}
+                    <span class="attire-pill attire-{{ attire }}">
+                        {% if attire == 'arabic_male' %}Thobe{% elif attire == 'arabic_female' %}Abaya{% elif attire == 'modern_dress' %}Modern{% else %}Unknown{% endif %}: {{ count }}
+                    </span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if camera.last_error and camera.status != 'online' %}
+                <div class="error-box" style="margin-bottom: 14px; padding: 12px 14px; font-size: 12px;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <div>
+                        <strong>
+                            {% if camera.source_type == 'rtsp' %}RTSP Disconnected:{% elif camera.source_type == 'http_mjpeg' %}HTTP Stream Disconnected:{% elif camera.source_type == 'usb_webcam' %}USB Webcam Disconnected:{% elif camera.source_type == 'built_in_webcam' %}Webcam Unavailable:{% else %}Camera Error:{% endif %}
+                        </strong> {{ camera.last_error }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="d-flex gap-2" style="flex-wrap: wrap;">
+                    <a href="{% url 'core:live_camera' camera.pk %}" class="btn btn-primary btn-sm" style="flex: 1;">
+                        <i class="fa-solid fa-eye"></i> Live View
+                    </a>
+                    <form method="post" action="{% url 'core:cameras' %}" style="flex: 1;">
+                        {% csrf_token %}
+                        <input type="hidden" name="camera_id" value="{{ camera.pk }}">
+                        <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%;">
+                            <i class="fa-solid fa-play"></i> Start Worker
+                        </button>
+                    </form>
+                    <a href="{% url 'core:edit_camera' camera.pk %}" class="btn btn-secondary btn-sm" title="Edit Camera">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </a>
+                    <form method="post" action="{% url 'core:delete_camera' camera.pk %}" onsubmit="return confirm('Are you sure you want to delete camera {{ camera.name }}?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-secondary btn-sm" style="color: var(--danger);" title="Delete Camera">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endwith %}
+            {% empty %}
+            <div class="empty-state" style="grid-column: 1 / -1;">
+                <i class="fa-solid fa-video-slash"></i>
+                <h3>No cameras added yet</h3>
+                <p>Click the button above to create your first camera and start monitoring.</p>
+                <button type="button" class="btn btn-primary" id="openAddCameraModalEmpty" style="margin-top: 16px;">
+                    <i class="fa-solid fa-plus"></i> Add Camera
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div id="cameraModal" class="modal-overlay{% if form and form.errors or editing_camera %} open{% endif %}">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-video-plus text-muted" style="margin-right: 8px;"></i>{% if editing_camera %}Edit Camera: {{ editing_camera.name }}{% else %}Add New Camera{% endif %}</h3>
+            <button type="button" class="close-btn" data-close-modal aria-label="Close">×</button>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% if editing_camera %}{% url 'core:edit_camera' editing_camera.pk %}{% else %}{% url 'core:add_camera' %}{% endif %}">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="invalid-feedback" style="margin-bottom: 14px;">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label for="id_name">Camera Name</label>
+                    <input type="text" name="name" id="id_name" class="form-control"
+                        value="{{ form.name.value|default_if_none:'' }}" required placeholder="e.g. Main Entrance">
+                    {% if form.name.errors %}
+                    <div class="invalid-feedback">{{ form.name.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="id_source_type">Camera Type</label>
+                    <select name="source_type" id="id_source_type" class="form-control">
+                        {% for value, label in form.fields.source_type.choices %}
+                        <option value="{{ value }}" {% if form.source_type.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if form.source_type.errors %}
+                    <div class="invalid-feedback">{{ form.source_type.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group" id="sourceGroup">
+                    <label for="id_source" id="sourceLabel">Stream URL / Source</label>
+                    <input type="text" name="source" id="id_source" class="form-control"
+                        value="{{ form.source.value|default_if_none:'' }}" placeholder="rtsp://admin:password@192.168.1.100:554/stream1">
+                    <small id="sourceHelp" style="display: block; margin-top: 6px; font-size: 12px; color: var(--muted);"></small>
+                    {% if form.source.errors %}
+                    <div class="invalid-feedback">{{ form.source.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-check">
+                    <input type="checkbox" name="enabled" id="id_enabled" {% if form.enabled.value or not form.is_bound %}checked{% endif %}>
+                    <label for="id_enabled">Enable this camera immediately</label>
+                </div>
+
+                <div class="form-check">
+                    <input type="checkbox" name="zone_enabled" id="id_zone_enabled" {% if form.zone_enabled.value or not form.is_bound %}checked{% endif %}>
+                    <label for="id_zone_enabled"><i class="fa-solid fa-vector-square" style="color: #06b6d4; margin-right: 4px;"></i> Enable Counting Zone box</label>
+                </div>
+
+                <div class="form-check">
+                    <input type="checkbox" name="tripwire_enabled" id="id_tripwire_enabled" {% if form.tripwire_enabled.value or not form.is_bound %}checked{% endif %}>
+                    <label for="id_tripwire_enabled"><i class="fa-solid fa-route" style="color: #ec4899; margin-right: 4px;"></i> Enable Tripwire Line crossing</label>
+                </div>
+
+                <div class="d-flex justify-between align-center" style="margin-top: 24px; gap: 12px;">
+                    <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-check"></i> Create Camera
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const modal = document.getElementById('cameraModal');
+    const openBtns = [document.getElementById('openAddCameraModal'), document.getElementById('openAddCameraModalEmpty')].filter(Boolean);
+    const closeBtns = document.querySelectorAll('[data-close-modal]');
+    const sourceTypeSelect = document.getElementById('id_source_type');
+    const sourceInput = document.getElementById('id_source');
+    const sourceLabel = document.getElementById('sourceLabel');
+    const sourceHelp = document.getElementById('sourceHelp');
+
+    function updateSourceConfig() {
+        if (!sourceTypeSelect) return;
+        const val = sourceTypeSelect.value;
+        if (val === 'rtsp') {
+            sourceLabel.textContent = 'RTSP Stream URL';
+            sourceInput.placeholder = 'rtsp://admin:password@192.168.1.100:554/unicast';
+            sourceHelp.textContent = 'For an NVR, enter the base /unicast URL once. The VMS creates channels 1-4 automatically.';
+        } else if (val === 'http_mjpeg') {
+            sourceLabel.textContent = 'HTTP / MJPEG Stream URL';
+            sourceInput.placeholder = 'http://192.168.1.50:8080/video';
+            sourceHelp.textContent = 'Enter HTTP stream URL (e.g. Android IP Webcam app or HTTP MJPEG server).';
+        } else if (val === 'usb_webcam') {
+            sourceLabel.textContent = 'USB Camera Index';
+            sourceInput.placeholder = '1';
+            sourceHelp.textContent = 'Enter device index for external USB webcam (typically 1 or 2).';
+        } else if (val === 'local_video') {
+            sourceLabel.textContent = 'Video File Path';
+            sourceInput.placeholder = 'C:/path/to/sample.mp4';
+            sourceHelp.textContent = 'Enter absolute path to local video file.';
+        } else {
+            sourceLabel.textContent = 'Built-in Webcam Index';
+            sourceInput.placeholder = '0';
+            sourceHelp.textContent = 'Leave empty or 0 for system built-in webcam.';
+        }
+    }
+
+    if (sourceTypeSelect) {
+        sourceTypeSelect.addEventListener('change', updateSourceConfig);
+        updateSourceConfig();
+    }
+
+    function toggleModal(show) {
+        if (!modal) return;
+        modal.classList.toggle('open', show);
+        document.body.style.overflow = show ? 'hidden' : '';
+    }
+
+    openBtns.forEach(btn => btn.addEventListener('click', () => toggleModal(true)));
+    closeBtns.forEach(btn => btn.addEventListener('click', () => toggleModal(false)));
+
+    modal?.addEventListener('click', (event) => {
+        if (event.target === modal) toggleModal(false);
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && modal?.classList.contains('open')) {
+            toggleModal(false);
+        }
+    });
+</script>
+{% endblock %}

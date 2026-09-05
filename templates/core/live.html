@@ -1,0 +1,1383 @@
+{% extends "base.html" %}
+
+{% block title %}{% if camera %}{{ camera.name }}{% else %}All Cameras{% endif %}{% endblock %}
+{% block page_title %}{% if camera %}{{ camera.name }}{% else %}All Cameras{% endif %}{% endblock %}
+{% block page_subtitle %}{% if camera %}Unified camera dashboard with live view, recordings, and visit profiles{% else %}Live view from every enabled camera{% endif %}{% endblock %}
+
+{% block header_actions %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Button Styles - LocusVMS Aesthetic */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 11px 20px;
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: var(--transition);
+        white-space: nowrap;
+    }
+
+    .btn i {
+        font-size: 15px;
+    }
+
+    .btn-primary {
+        background: #0f172a;
+        /* Dark slate for primary actions */
+        color: #fff;
+        box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.15);
+    }
+
+    .btn-primary:hover {
+        background: var(--primary);
+        /* Turns emerald on hover */
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px -4px var(--primary-glow);
+    }
+
+    .btn-secondary {
+        background: var(--card);
+        color: var(--text-heading);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .btn-secondary:hover {
+        background: var(--bg);
+        border-color: #cbd5e1;
+    }
+
+    .btn-sm {
+        padding: 8px 14px;
+        font-size: 13px;
+        border-radius: var(--radius-sm);
+    }
+
+    /* Card Styles */
+    .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        transition: var(--transition);
+    }
+
+    .card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+
+    .card-header {
+        padding: 22px 24px;
+        border-bottom: 1px solid var(--border-light);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .card-header h2 {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-heading);
+        margin: 0;
+    }
+
+    .card-header p {
+        font-size: 13px;
+        color: var(--muted);
+        margin: 4px 0 0;
+    }
+
+    .card-body {
+        padding: 24px;
+    }
+
+    .mb-4 {
+        margin-bottom: 24px;
+    }
+
+    /* Badges */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: var(--radius-full);
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .badge::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+
+    .badge-online {
+        background: var(--success-light);
+        color: #059669;
+    }
+
+    .badge-online::before {
+        background: var(--success);
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-offline {
+        background: rgba(100, 116, 139, 0.12);
+        color: var(--muted);
+    }
+
+    .badge-offline::before {
+        background: var(--muted-light);
+    }
+
+    .badge-error {
+        background: var(--danger-light);
+        color: #dc2626;
+    }
+
+    .badge-error::before {
+        background: var(--danger);
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+    }
+
+    /* Attire Pills */
+    .attire-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: var(--radius-full);
+        font-size: 12px;
+        font-weight: 600;
+        margin: 0 6px 6px 0;
+    }
+
+    .attire-arabic_male {
+        background: rgba(16, 185, 129, 0.12);
+        color: #047857;
+    }
+
+    /* Changed to Emerald */
+    .attire-arabic_female {
+        background: rgba(236, 72, 153, 0.12);
+        color: #be185d;
+    }
+
+    .attire-modern_dress {
+        background: rgba(14, 165, 233, 0.12);
+        color: #0284c7;
+    }
+
+    .attire-unknown {
+        background: rgba(148, 163, 184, 0.2);
+        color: #475569;
+    }
+
+    /* Tables */
+    .table-container {
+        overflow-x: auto;
+        border-radius: var(--radius);
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+    .table th {
+        text-align: left;
+        padding: 14px 16px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border-light);
+        vertical-align: middle;
+    }
+
+    .table tbody tr {
+        transition: var(--transition);
+    }
+
+    .table tbody tr:hover {
+        background: var(--bg);
+    }
+
+    .table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Empty States */
+    .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--muted);
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        margin-bottom: 16px;
+        color: var(--border);
+    }
+
+    .empty-state h3 {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-heading);
+        margin-bottom: 6px;
+    }
+
+    /* Tabs */
+    .tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+        background: var(--card);
+        padding: 6px;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        width: fit-content;
+    }
+
+    .tab-btn {
+        padding: 10px 18px;
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        color: var(--muted);
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .tab-btn:hover {
+        color: var(--text);
+        background: var(--bg);
+    }
+
+    .tab-btn.active {
+        background: var(--primary);
+        color: #fff;
+        box-shadow: 0 4px 12px -2px var(--primary-glow);
+    }
+
+    /* Solid emerald for active tab */
+    .tab-panel {
+        display: none;
+    }
+
+    .tab-panel.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Video Layout & Info Cards */
+    .hero-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        margin-bottom: 28px;
+    }
+
+    .stream-card {
+        background: #000;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+        border: 1px solid var(--border);
+        width: 100%;
+        max-height: 620px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .stream-card img {
+        width: 100%;
+        max-height: 620px;
+        object-fit: contain;
+        display: block;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 16px;
+    }
+
+    .info-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px;
+        transition: var(--transition);
+    }
+
+    .info-card:hover {
+        box-shadow: var(--shadow-md);
+    }
+
+    .info-card h3 {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        margin: 0 0 8px;
+    }
+
+    .info-card p {
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--text-heading);
+        margin: 0;
+    }
+
+    .info-card p.online {
+        color: var(--success);
+    }
+
+    .info-card p.offline {
+        color: var(--danger);
+    }
+
+    /* Error Box */
+    .error-box {
+        background: var(--danger-light);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        color: #991b1b;
+        padding: 16px 18px;
+        border-radius: var(--radius);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .error-box i {
+        font-size: 20px;
+        margin-top: 2px;
+    }
+
+    /* Recording Grid */
+    .camera-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    .camera-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px;
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition);
+    }
+
+    .camera-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+    }
+
+    .camera-card h3 {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-heading);
+        margin: 0 0 4px;
+    }
+
+    .camera-card-meta {
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    /* Utilities */
+    .text-muted {
+        color: var(--muted);
+    }
+
+    .d-flex {
+        display: flex;
+    }
+
+    .align-center {
+        align-items: center;
+    }
+
+    .gap-2 {
+        gap: 8px;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    /* Media Modal */
+    .media-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        background: rgba(2, 6, 23, 0.9);
+        backdrop-filter: blur(8px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        animation: modalFadeIn 0.2s ease;
+    }
+
+    .media-modal.open {
+        display: flex;
+    }
+
+    .media-modal-box {
+        position: relative;
+        width: 100%;
+        max-width: 960px;
+        background: #0f172a;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-lg);
+        box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.6);
+        overflow: hidden;
+        animation: modalScaleIn 0.25s ease;
+    }
+
+    .media-modal-close {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        width: 38px;
+        height: 38px;
+        border-radius: var(--radius-full);
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+    }
+
+    .media-modal-close:hover {
+        background: rgba(239, 68, 68, 0.85);
+    }
+
+    .media-modal-content {
+        width: 100%;
+        max-height: calc(100vh - 80px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .media-modal-content img {
+        max-width: 100%;
+        max-height: calc(100vh - 80px);
+        object-fit: contain;
+        display: block;
+    }
+
+    .media-modal-content video {
+        width: 100%;
+        max-height: calc(100vh - 80px);
+        background: #000;
+        display: block;
+    }
+
+    @keyframes modalFadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes modalScaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.96);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @media (max-width: 900px) {
+        .hero-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .camera-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .all-cameras-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding: 18px 22px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+    }
+
+    .camera-wall {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        gap: 20px;
+    }
+
+    .camera-tile {
+        overflow: hidden;
+        background: #0f172a;
+        border: 1px solid #1e293b;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .camera-tile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+        color: #f8fafc;
+    }
+
+    .camera-tile-header h2 {
+        overflow: hidden;
+        margin: 0;
+        font-size: 15px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .camera-tile-header a {
+        flex-shrink: 0;
+        color: #6ee7b7;
+        font-size: 12px;
+        text-decoration: none;
+    }
+
+    .camera-tile img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: contain;
+        background: #020617;
+    }
+
+    @media (max-width: 640px) {
+        .camera-wall {
+            grid-template-columns: 1fr;
+        }
+
+        .all-cameras-toolbar {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if not camera %}
+<div class="all-cameras-toolbar">
+    <div>
+        <strong>{{ cameras|length }} enabled camera{{ cameras|length|pluralize }}</strong>
+        <div class="text-muted" style="font-size: 13px;">All feeds are started automatically on this page.</div>
+    </div>
+    <a class="btn btn-secondary btn-sm" href="{% url 'core:dashboard' %}">
+        <i class="fa-solid fa-chart-line"></i> Dashboard
+    </a>
+</div>
+
+{% if cameras %}
+<div class="camera-wall">
+    {% for camera_item in cameras %}
+    <article class="camera-tile">
+        <header class="camera-tile-header">
+            <h2><i class="fa-solid fa-video" style="color: #6ee7b7; margin-right: 8px;"></i>{{ camera_item.name }}</h2>
+            <a href="{% url 'core:live_camera' camera_item.pk %}">Details <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+        </header>
+        <img src="{% url 'core:camera_stream' camera_item.pk %}" alt="Live stream from {{ camera_item.name }}">
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fa-solid fa-video-slash"></i>
+    <h2>No enabled cameras</h2>
+    <p>Enable a camera from the Cameras page to see its live feed here.</p>
+</div>
+{% endif %}
+{% else %}
+<div class="d-flex align-center gap-2" style="margin-bottom: 20px;">
+    <span
+        class="badge {% if state.status == 'online' %}badge-online{% elif state.status == 'offline' %}badge-offline{% else %}badge-error{% endif %}"
+        id="camera-status-badge">
+        {{ state.status|upper }}
+    </span>
+    <span class="text-muted" style="font-size: 13px;">
+        <i class="fa-solid fa-circle-info"></i> {{ camera.get_source_type_display }}
+    </span>
+</div>
+
+<div class="error-box" id="camera-error-box" {% if not state.last_error or state.status == 'online' %}style="display: none;" {% endif %}>
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <div>
+        <strong id="camera-error-title">
+            {% if camera.source_type == 'rtsp' %}
+                RTSP Stream Disconnected
+            {% elif camera.source_type == 'http_mjpeg' %}
+                HTTP/MJPEG Stream Disconnected
+            {% elif camera.source_type == 'usb_webcam' %}
+                USB Webcam Disconnected
+            {% elif camera.source_type == 'built_in_webcam' %}
+                Built-in Webcam Unavailable
+            {% elif camera.source_type == 'local_video' %}
+                Local Video File Missing
+            {% else %}
+                Camera Disconnected
+            {% endif %}
+        </strong><br>
+        <span id="camera-error-message">{{ state.last_error }}</span><br>
+        {% if camera.source_type == 'built_in_webcam' or camera.source_type == 'usb_webcam' %}
+        <small class="text-muted"><i class="fa-solid fa-circle-info"></i> Tip: Verify device USB connection and Windows Privacy Settings (Settings → Privacy & security → Camera).</small>
+        {% elif camera.source_type == 'rtsp' %}
+        <small class="text-muted"><i class="fa-solid fa-network-wired"></i> Tip: Verify camera IP, RTSP port (554/6000), credentials, network route, and stream limits.</small>
+        {% elif camera.source_type == 'http_mjpeg' %}
+        <small class="text-muted"><i class="fa-solid fa-globe"></i> Tip: Verify HTTP URL endpoint is reachable and streaming.</small>
+        {% endif %}
+    </div>
+</div>
+
+<div class="tabs">
+    <a class="tab-btn {% if active_tab == 'live' %}active{% endif %}"
+        href="{% url 'core:live_camera' camera.pk %}?tab=live">
+        <i class="fa-solid fa-eye"></i> Live
+    </a>
+    <a class="tab-btn {% if active_tab == 'recordings' %}active{% endif %}"
+        href="{% url 'core:live_camera' camera.pk %}?tab=recordings">
+        <i class="fa-solid fa-film"></i> Recordings
+    </a>
+    <a class="tab-btn {% if active_tab == 'profiles' %}active{% endif %}"
+        href="{% url 'core:live_camera' camera.pk %}?tab=profiles">
+        <i class="fa-solid fa-user-check"></i> Visit Profiles
+    </a>
+</div>
+
+<div class="tab-panel {% if active_tab == 'live' %}active{% endif %}" id="panel-live">
+    <div id="overcrowded-banner"
+        style="display: none; background: #ef4444; color: #fff; padding: 14px 20px; border-radius: 12px; margin-bottom: 20px; font-weight: 700; align-items: center; justify-content: space-between; box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.4);">
+        <span><i class="fa-solid fa-triangle-exclamation fa-beat" style="margin-right: 8px;"></i> OVERCROWDING ALARM:
+            Counting Zone Capacity Exceeded!</span>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="muteAlarm()"
+            style="background: #fff; color: #ef4444;">Mute Sound</button>
+    </div>
+
+    <div class="hero-grid" style="margin-bottom: 28px;">
+        <div class="stream-card"
+            style="position: relative; border-radius: var(--radius-lg); overflow: hidden; background: #0b0f19; min-height: 380px; box-shadow: var(--shadow-md);">
+            <!-- Instant Stream Loader Overlay -->
+            <div id="stream-loader"
+                style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(11, 15, 25, 0.92); z-index: 10; color: #94a3b8; gap: 12px; transition: opacity 0.3s ease;">
+                <i class="fa-solid fa-circle-notch fa-spin fa-2x" style="color: var(--primary);"></i>
+                <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.3px;">Connecting to Live RTSP Feed...</span>
+            </div>
+            <img id="liveStreamImg" src="{% url 'core:camera_stream' camera.pk %}" alt="Live stream from {{ camera.name }}"
+                style="width: 100%; display: block; object-fit: contain;"
+                onload="const l = document.getElementById('stream-loader'); if (l) l.style.display='none';">
+            <canvas id="geometryCanvas"
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; display: none; z-index: 15;"></canvas>
+        </div>
+
+        <!-- Sleek AI Vision Controls Card -->
+        <div class="card"
+            style="padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <div class="d-flex align-center gap-2">
+                <span
+                    style="font-size: 13px; font-weight: 700; color: var(--text-heading); display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-sliders text-muted"></i> Interactive Setup:
+                </span>
+                <span id="drawingHintText" class="text-muted" style="font-size: 12px;">Click a tool to adjust detection
+                    boundaries.</span>
+            </div>
+            <div class="d-flex align-center gap-2" style="flex-wrap: wrap;">
+                <button type="button"
+                    class="btn {% if camera.zone_enabled %}btn-primary{% else %}btn-secondary{% endif %} btn-sm"
+                    id="btnToggleZone" onclick="toggleFeature('zone')" title="Toggle Counting Zone Box ON/OFF">
+                    <i class="fa-solid fa-vector-square" style="color: #06b6d4;"></i> Zone: <span id="zoneStatusText">{% if camera.zone_enabled %}ON{% else %}OFF{% endif %}</span>
+                </button>
+                <button type="button"
+                    class="btn {% if camera.tripwire_enabled %}btn-primary{% else %}btn-secondary{% endif %} btn-sm"
+                    id="btnToggleTripwire" onclick="toggleFeature('tripwire')" title="Toggle Tripwire Line ON/OFF">
+                    <i class="fa-solid fa-route" style="color: #ec4899;"></i> Tripwire: <span id="tripwireStatusText">{% if camera.tripwire_enabled %}ON{% else %}OFF{% endif %}</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="enableDrawer('zone')" id="btnDrawZone">
+                    <i class="fa-solid fa-vector-square"></i> Adjust Zone
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="enableDrawer('tripwire')"
+                    id="btnDrawTripwire">
+                    <i class="fa-solid fa-route"></i> Adjust Tripwire
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" id="saveGeomBtn" onclick="saveGeometry()"
+                    style="display: none; background: #10b981; border-color: #10b981; color: #fff;">
+                    <i class="fa-solid fa-check"></i> Save Setup
+                </button>
+            </div>
+        </div>
+
+        <!-- Telemetry & Info Cards Grid (Positioned Below Video Screen) -->
+        <div class="info-grid">
+            <div class="info-card">
+                <h3>Zone Occupancy</h3>
+                <p id="zone-occupancy">{{ state.zone_occupancy|default:0 }} / {{ camera.queue_max_capacity }}</p>
+            </div>
+            <div class="info-card">
+                <h3>Tripwire IN / OUT</h3>
+                <p id="tripwire-count"><span style="color: #10b981;">IN: {{ state.tripwire_in|default:0 }}</span> | <span
+                        style="color: #ef4444;">OUT: {{ state.tripwire_out|default:0 }}</span></p>
+            </div>
+            <div class="info-card">
+                <h3>Active Tracks</h3>
+                <p id="active-tracks">{{ state.active_tracks|default:0 }}</p>
+            </div>
+            <div class="info-card">
+                <h3>Today's Visitors</h3>
+                <p id="visitor-count">{{ state.visitor_count|default:0 }}</p>
+            </div>
+            <div class="info-card">
+                <h3>Recording Status</h3>
+                <p id="recording-status" class="{% if state.recording %}online{% else %}offline{% endif %}">
+                    {% if state.recording %}<i class="fa-solid fa-circle-dot"
+                        style="font-size: 14px; vertical-align: middle; margin-right: 4px;"></i> Recording{% else %}Idle{% endif %}
+                </p>
+            </div>
+            <div class="info-card">
+                <h3>Analytics Engine</h3>
+                <p id="analytics-status" class="{% if state.analytics %}online{% else %}offline{% endif %}">
+                    {% if state.analytics %}Online{% else %}Offline{% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa-solid fa-users text-muted" style="margin-right: 8px;"></i>Recent Visitors</h2>
+        </div>
+        <div class="card-body">
+            {% if visitors %}
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Track ID</th>
+                            <th>Entry Time</th>
+                            <th>Counted Time</th>
+                            <th>Dwell Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for visitor in visitors %}
+                        <tr>
+                            <td><span class="badge badge-offline">#{{ visitor.track_id }}</span></td>
+                            <td>{{ visitor.entry_time|date:"H:i:s" }}</td>
+                            <td>{{ visitor.counted_time|date:"H:i:s" }}</td>
+                            <td>{{ visitor.dwell_time }}s</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fa-solid fa-users-slash"></i>
+                <h3>No visitors detected yet</h3>
+                <p>Visitors will appear here once the camera detects and tracks people.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="tab-panel {% if active_tab == 'recordings' %}active{% endif %}" id="panel-recordings">
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa-solid fa-film text-muted" style="margin-right: 8px;"></i>Recordings</h2>
+        </div>
+        <div class="card-body">
+            {% if videos %}
+            <div class="camera-grid">
+                {% for video in videos %}
+                <div class="camera-card" style="padding: 18px;">
+                    <div class="camera-card-header" style="margin-bottom: 10px;">
+                        <div>
+                            <h3 style="font-size: 15px;">{{ video.created_at|date:"Y-m-d H:i" }}</h3>
+                            <div class="camera-card-meta">Duration: {{ video.duration_seconds|default:0 }}s</div>
+                        </div>
+                    </div>
+                    <a href="{% url 'core:live_camera' camera.pk %}?tab=recordings&video_id={{ video.pk }}"
+                        class="btn btn-primary btn-sm" style="width: 100%;">
+                        <i class="fa-solid fa-play"></i> Play Recording
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fa-solid fa-film"></i>
+                <h3>No recordings yet</h3>
+                <p>Recordings will be saved automatically when the camera is active.</p>
+            </div>
+            {% endif %}
+
+            {% if selected_video %}
+            <div class="card" style="margin-top: 24px;">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-circle-play text-muted" style="margin-right: 8px;"></i>Now Playing</h2>
+                    <span class="text-muted">{{ selected_video.created_at }}</span>
+                </div>
+                <div class="card-body">
+                    <video controls autoplay
+                        style="width: 100%; max-height: 520px; background: #000; border-radius: 12px;">
+                        <source src="{% url 'core:stream_recording' selected_video.pk %}" type="video/mp4">
+                        Your browser does not support video playback.
+                    </video>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="tab-panel {% if active_tab == 'profiles' %}active{% endif %}" id="panel-profiles">
+    {% if selected_video %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2><i class="fa-solid fa-file-video text-muted" style="margin-right: 8px;"></i>Evidence Recording</h2>
+            <span class="text-muted">{{ selected_video.created_at }}</span>
+        </div>
+        <div class="card-body">
+            <video controls autoplay style="width: 100%; max-height: 520px; background: #000; border-radius: 12px;">
+                <source src="{% url 'core:stream_recording' selected_video.pk %}" type="video/mp4">
+                Your browser does not support video playback.
+            </video>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h2><i class="fa-solid fa-user-check text-muted" style="margin-right: 8px;"></i>Visit Profiles</h2>
+                <p>Visitors inside the Counting Zone are recorded after 60 seconds of continuous presence. Exiting and
+                    re-entering starts a new 60-second zone counter.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-secondary btn-sm" href="{% url 'core:export_visit_profiles' camera.pk %}?format=csv">
+                    <i class="fa-solid fa-file-lines"></i> CSV
+                </a>
+                <a class="btn btn-secondary btn-sm" href="{% url 'core:export_visit_profiles' camera.pk %}?format=pdf">
+                    <i class="fa-solid fa-file-pdf"></i> PDF
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if visit_profiles %}
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Person</th>
+                            <th>Track ID</th>
+                            <th>Date</th>
+                            <th>Entry Time</th>
+                            <th>Counted Time</th>
+                            <th>Required</th>
+                            <th>Dwell</th>
+                            <th>Gender</th>
+                            <th>Attire</th>
+                            <th>Pose</th>
+                            <th>Live</th>
+                            <th>Evidence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for profile in visit_profiles %}
+                        <tr>
+                            <td><strong>Visit {{ profile.sequence_number }}</strong></td>
+                            <td>#{{ profile.person_profile_id|default:"new" }}</td>
+                            <td>#{{ profile.track_id }}</td>
+                            <td>{{ profile.date|date:"Y-m-d" }}</td>
+                            <td>{{ profile.entry_time|date:"H:i:s" }}</td>
+                            <td>{{ profile.counted_time|date:"H:i:s" }}</td>
+                            <td>{{ profile.required_seconds }}s</td>
+                            <td>{{ profile.dwell_time }}s</td>
+                            <td>{{ profile.get_gender_display }}</td>
+                            <td>
+                                <span class="attire-pill attire-{{ profile.attire }}">{{ profile.attire_display }}</span>
+                                {% if profile.attire_summary %}
+                                <br><small class="text-muted">{{ profile.attire_summary }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ profile.pose|default:"unknown" }}</td>
+                            <td>{{ profile.liveness_score|floatformat:2 }}</td>
+                            <td>
+                                {% if profile.snapshot_path %}
+                                <button type="button" class="btn btn-secondary btn-sm" style="margin-bottom: 4px;"
+                                    onclick="openImageModal('{{ profile.snapshot_url }}')">
+                                    <i class="fa-solid fa-image"></i> Snapshot
+                                </button>
+                                {% endif %}
+                                {% if profile.video %}
+                                <button type="button" class="btn btn-secondary btn-sm"
+                                    data-video-url="{% url 'core:stream_recording' profile.video.pk %}"
+                                    onclick="openVideoModal(this.dataset.videoUrl)">
+                                    <i class="fa-solid fa-video"></i> Video
+                                </button>
+                                {% endif %}
+                                {% if not profile.snapshot_path and not profile.video %}
+                                <span class="text-muted">None</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fa-solid fa-user-check"></i>
+                <h3>No visit profiles recorded yet</h3>
+                <p>Visit profiles are created when visitors meet the required tracking duration.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="media-modal" id="mediaModal" onclick="closeMediaModal(event)">
+    <div class="media-modal-box" onclick="event.stopPropagation()">
+        <button type="button" class="media-modal-close" onclick="closeMediaModal()" aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="media-modal-content" id="mediaModalContent"></div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if camera %}
+<script>
+    const stateUrl = `{% url 'core:camera_state' camera.pk %}`;
+    const statusElements = {
+        recording: document.getElementById('recording-status'),
+        analytics: document.getElementById('analytics-status'),
+        activeTracks: document.getElementById('active-tracks'),
+        visitorCount: document.getElementById('visitor-count'),
+        statusBadge: document.getElementById('camera-status-badge'),
+        errorBox: document.getElementById('camera-error-box'),
+        errorMessage: document.getElementById('camera-error-message')
+    };
+
+    let audioCtx = null;
+    let alarmMuted = false;
+    let currentZoneEnabled = "{{ camera.zone_enabled|yesno:'true,false' }}" === "true";
+    let currentTripwireEnabled = "{{ camera.tripwire_enabled|yesno:'true,false' }}" === "true";
+
+    function playAudioChime() {
+        if (alarmMuted) return;
+        try {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.5);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        } catch (e) { }
+    }
+
+    function muteAlarm() {
+        alarmMuted = true;
+        const banner = document.getElementById('overcrowded-banner');
+        if (banner) banner.style.display = 'none';
+    }
+
+    function updateLiveState() {
+        fetch(stateUrl)
+            .then(response => response.ok ? response.json() : null)
+            .then(data => {
+                if (!data) return;
+                if (statusElements.recording) {
+                    statusElements.recording.innerHTML = data.recording
+                        ? '<i class="fa-solid fa-circle-dot" style="font-size: 14px; vertical-align: middle; margin-right: 4px;"></i> Recording'
+                        : 'Idle';
+                    statusElements.recording.className = data.recording ? 'online' : 'offline';
+                }
+                if (statusElements.analytics) {
+                    statusElements.analytics.textContent = data.analytics ? 'Online' : 'Offline';
+                    statusElements.analytics.className = data.analytics ? 'online' : 'offline';
+                }
+                if (statusElements.activeTracks) statusElements.activeTracks.textContent = data.active_tracks !== undefined ? data.active_tracks : 0;
+                if (statusElements.visitorCount) statusElements.visitorCount.textContent = data.visitor_count !== undefined ? data.visitor_count : 0;
+
+                const occEl = document.getElementById('zone-occupancy');
+                if (occEl) occEl.textContent = `${data.zone_occupancy || 0} / ${data.queue_max_capacity || 5}`;
+
+                const tripEl = document.getElementById('tripwire-count');
+                if (tripEl) tripEl.innerHTML = `<span style="color: #10b981;">IN: ${data.tripwire_in || 0}</span> | <span style="color: #ef4444;">OUT: ${data.tripwire_out || 0}</span>`;
+
+                const banner = document.getElementById('overcrowded-banner');
+                if (data.queue_overcrowded) {
+                    if (banner) banner.style.display = 'flex';
+                    playAudioChime();
+                } else {
+                    if (banner) banner.style.display = 'none';
+                    alarmMuted = false;
+                }
+
+                if (statusElements.statusBadge) {
+                    const badgeClass = data.status === 'online' ? 'badge-online' : data.status === 'offline' ? 'badge-offline' : 'badge-error';
+                    statusElements.statusBadge.className = 'badge ' + badgeClass;
+                    statusElements.statusBadge.textContent = data.status ? data.status.toUpperCase() : 'OFFLINE';
+                }
+
+                if (statusElements.errorBox && statusElements.errorMessage) {
+                    if (data.last_error && data.status !== 'online') {
+                        statusElements.errorMessage.textContent = data.last_error;
+                        const titleEl = document.getElementById('camera-error-title');
+                        if (titleEl && data.source_type) {
+                            if (data.source_type === 'rtsp') {
+                                titleEl.textContent = 'RTSP Stream Disconnected';
+                            } else if (data.source_type === 'http_mjpeg') {
+                                titleEl.textContent = 'HTTP/MJPEG Stream Disconnected';
+                            } else if (data.source_type === 'usb_webcam') {
+                                titleEl.textContent = 'USB Webcam Disconnected';
+                            } else if (data.source_type === 'built_in_webcam') {
+                                titleEl.textContent = 'Built-in Webcam Unavailable';
+                            } else if (data.source_type === 'local_video') {
+                                titleEl.textContent = 'Local Video File Missing';
+                            }
+                        }
+                        statusElements.errorBox.style.display = 'flex';
+                    } else {
+                        statusElements.errorBox.style.display = 'none';
+                    }
+                }
+
+                if (data.zone_enabled !== undefined) {
+                    currentZoneEnabled = data.zone_enabled;
+                    const zBtn = document.getElementById('btnToggleZone');
+                    const zText = document.getElementById('zoneStatusText');
+                    if (zBtn && zText) {
+                        zText.textContent = currentZoneEnabled ? 'ON' : 'OFF';
+                        zBtn.className = currentZoneEnabled ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm';
+                    }
+                }
+                if (data.tripwire_enabled !== undefined) {
+                    currentTripwireEnabled = data.tripwire_enabled;
+                    const tBtn = document.getElementById('btnToggleTripwire');
+                    const tText = document.getElementById('tripwireStatusText');
+                    if (tBtn && tText) {
+                        tText.textContent = currentTripwireEnabled ? 'ON' : 'OFF';
+                        tBtn.className = currentTripwireEnabled ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm';
+                    }
+                }
+            })
+            .catch(() => { });
+    }
+
+    setInterval(updateLiveState, 1500);
+    updateLiveState();
+
+    // Automatic stream reconnection watchdog (prevents user having to refresh / hard refresh)
+    const streamImg = document.getElementById('liveStreamImg');
+    const streamLoader = document.getElementById('stream-loader');
+    let streamRetryTimer = null;
+
+    function autoReconnectStream() {
+        if (streamRetryTimer) clearTimeout(streamRetryTimer);
+        if (streamLoader) streamLoader.style.display = 'flex';
+        streamRetryTimer = setTimeout(() => {
+            const streamBase = `{% url 'core:camera_stream' camera.pk %}`;
+            if (streamImg) streamImg.src = `${streamBase}?_t=${Date.now()}`;
+        }, 1200);
+    }
+
+    if (streamImg) {
+        streamImg.addEventListener('error', autoReconnectStream);
+    }
+
+    // Canvas Geometry Drawer Script
+    const canvas = document.getElementById('geometryCanvas');
+    const imgEl = document.getElementById('liveStreamImg');
+    const saveBtn = document.getElementById('saveGeomBtn');
+    let drawerMode = null;
+    let isDrawing = false;
+    let startX = 0, startY = 0, currX = 0, currY = 0;
+    let geomPayload = {};
+
+    function enableDrawer(mode) {
+        drawerMode = mode;
+        canvas.style.display = 'block';
+        saveBtn.style.display = 'inline-flex';
+        const hintEl = document.getElementById('drawingHintText');
+        if (hintEl) {
+            hintEl.innerHTML = mode === 'zone'
+                ? '<strong style="color:#06b6d4;">Drawing Zone:</strong> Click and drag on video to set rectangle.'
+                : '<strong style="color:#ec4899;">Drawing Tripwire:</strong> Click and drag on video to draw line.';
+        }
+        canvas.width = canvas.clientWidth || imgEl.clientWidth || 640;
+        canvas.height = canvas.clientHeight || imgEl.clientHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    if (canvas) {
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+            isDrawing = true;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            currX = e.clientX - rect.left;
+            currY = e.clientY - rect.top;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.lineWidth = 3;
+
+            if (drawerMode === 'zone') {
+                ctx.strokeStyle = '#06b6d4';
+                ctx.fillStyle = 'rgba(6, 182, 212, 0.2)';
+                ctx.strokeRect(startX, startY, currX - startX, currY - startY);
+                ctx.fillRect(startX, startY, currX - startX, currY - startY);
+            } else if (drawerMode === 'tripwire') {
+                ctx.strokeStyle = '#ec4899';
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(currX, currY);
+                ctx.stroke();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (!isDrawing) return;
+            isDrawing = false;
+            const rect = canvas.getBoundingClientRect();
+            const w = rect.width || canvas.width || 640;
+            const h = rect.height || canvas.height || 480;
+            if (drawerMode === 'zone') {
+                const xmin = Math.max(0, Math.min(100, Math.round((Math.min(startX, currX) / w) * 100)));
+                const ymin = Math.max(0, Math.min(100, Math.round((Math.min(startY, currY) / h) * 100)));
+                const xmax = Math.max(0, Math.min(100, Math.round((Math.max(startX, currX) / w) * 100)));
+                const ymax = Math.max(0, Math.min(100, Math.round((Math.max(startY, currY) / h) * 100)));
+                if (xmax - xmin >= 1 && ymax - ymin >= 1) {
+                    geomPayload = { zone_enabled: true, zone_x_min: xmin, zone_y_min: ymin, zone_x_max: xmax, zone_y_max: ymax };
+                    const hintEl = document.getElementById('drawingHintText');
+                    if (hintEl) hintEl.innerHTML = `<span style="color:#06b6d4;font-weight:bold;">Zone box set (${xmax - xmin}% x ${ymax - ymin}%)! Click "Save Setup" to confirm.</span>`;
+                } else {
+                    const hintEl = document.getElementById('drawingHintText');
+                    if (hintEl) hintEl.innerHTML = '<span style="color:#ef4444;font-weight:bold;">Click and drag a box across the video to set zone.</span>';
+                }
+            } else if (drawerMode === 'tripwire') {
+                const x1 = Math.max(0, Math.min(100, Math.round((startX / w) * 100)));
+                const y1 = Math.max(0, Math.min(100, Math.round((startY / h) * 100)));
+                const x2 = Math.max(0, Math.min(100, Math.round((currX / w) * 100)));
+                const y2 = Math.max(0, Math.min(100, Math.round((currY / h) * 100)));
+                if (Math.abs(x2 - x1) >= 1 || Math.abs(y2 - y1) >= 1) {
+                    geomPayload = { tripwire_enabled: true, tripwire_x1: x1, tripwire_y1: y1, tripwire_x2: x2, tripwire_y2: y2 };
+                    const hintEl = document.getElementById('drawingHintText');
+                    if (hintEl) hintEl.innerHTML = '<span style="color:#ec4899;font-weight:bold;">Tripwire line set! Click "Save Setup" to confirm.</span>';
+                } else {
+                    const hintEl = document.getElementById('drawingHintText');
+                    if (hintEl) hintEl.innerHTML = '<span style="color:#ef4444;font-weight:bold;">Click and drag a line across the video to set tripwire.</span>';
+                }
+            }
+        });
+    }
+
+    function toggleFeature(feature) {
+        let payload = {};
+        if (feature === 'zone') {
+            currentZoneEnabled = !currentZoneEnabled;
+            payload = { zone_enabled: currentZoneEnabled };
+        } else if (feature === 'tripwire') {
+            currentTripwireEnabled = !currentTripwireEnabled;
+            payload = { tripwire_enabled: currentTripwireEnabled };
+        }
+
+        const updateUrl = `{% url 'core:update_camera_geometry' camera.pk %}`;
+        fetch(updateUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify(payload),
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    if (data.zone_enabled !== undefined) currentZoneEnabled = data.zone_enabled;
+                    if (data.tripwire_enabled !== undefined) currentTripwireEnabled = data.tripwire_enabled;
+
+                    const zBtn = document.getElementById('btnToggleZone');
+                    const zText = document.getElementById('zoneStatusText');
+                    if (zBtn && zText) {
+                        zText.textContent = currentZoneEnabled ? 'ON' : 'OFF';
+                        zBtn.className = currentZoneEnabled ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm';
+                    }
+
+                    const tBtn = document.getElementById('btnToggleTripwire');
+                    const tText = document.getElementById('tripwireStatusText');
+                    if (tBtn && tText) {
+                        tText.textContent = currentTripwireEnabled ? 'ON' : 'OFF';
+                        tBtn.className = currentTripwireEnabled ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm';
+                    }
+
+                    const hintEl = document.getElementById('drawingHintText');
+                    if (hintEl) {
+                        const stateLabel = (feature === 'zone' ? currentZoneEnabled : currentTripwireEnabled) ? 'enabled' : 'disabled';
+                        hintEl.innerHTML = `<span style="color:#10b981;font-weight:bold;">${feature.toUpperCase()} ${stateLabel}! Overlay will update in real-time.</span>`;
+                        setTimeout(() => { hintEl.textContent = 'Click a tool to adjust detection boundaries.'; }, 3000);
+                    }
+                }
+            });
+    }
+
+    function saveGeometry() {
+        if (!Object.keys(geomPayload).length) return;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+        const updateUrl = `{% url 'core:update_camera_geometry' camera.pk %}`;
+        fetch(updateUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify(geomPayload),
+        })
+            .then(r => r.json())
+            .then(data => {
+                canvas.style.display = 'none';
+                saveBtn.style.display = 'none';
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> Save Setup';
+                geomPayload = {};
+                const hintEl = document.getElementById('drawingHintText');
+                if (hintEl) hintEl.textContent = 'Detection setup saved!';
+                setTimeout(() => {
+                    if (hintEl) hintEl.textContent = 'Click a tool to adjust detection boundaries.';
+                }, 3000);
+            })
+            .catch(err => {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> Save Setup';
+                const hintEl = document.getElementById('drawingHintText');
+                if (hintEl) hintEl.innerHTML = '<span style="color:#ef4444;font-weight:bold;">Failed to save setup. Please try again.</span>';
+            });
+    }
+
+    const mediaModal = document.getElementById('mediaModal');
+    const mediaModalContent = document.getElementById('mediaModalContent');
+
+    function openImageModal(src) {
+        mediaModalContent.innerHTML = `<img src="${src}" alt="Evidence snapshot">`;
+        mediaModal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function openVideoModal(src) {
+        mediaModalContent.innerHTML = `
+            <video controls autoplay>
+                <source src="${src}" type="video/mp4">
+                Your browser does not support video playback.
+            </video>
+        `;
+        mediaModal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeMediaModal(event) {
+        if (event && event.target !== mediaModal && event.target.closest('.media-modal-box')) return;
+        mediaModal.classList.remove('open');
+        mediaModalContent.innerHTML = '';
+        document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && mediaModal.classList.contains('open')) {
+            closeMediaModal();
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,477 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block login_content %}
+<style>
+    body {
+        background: #ffffff;
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .login-scene {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        background: #ffffff;
+        overflow: hidden;
+    }
+
+    .login-grid {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    /* Left Panel (Dark) */
+    .login-left {
+        background: #0f172a;
+        color: #ffffff;
+        padding: 48px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .login-shape {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.4;
+        animation: drift 20s ease-in-out infinite;
+    }
+
+    .shape-1 {
+        width: 400px;
+        height: 400px;
+        background: #10b981;
+        top: -100px;
+        left: -100px;
+        animation-delay: 0s;
+    }
+
+    .shape-2 {
+        width: 300px;
+        height: 300px;
+        background: #059669;
+        bottom: -50px;
+        right: -50px;
+        animation-delay: -10s;
+    }
+
+    /* shape-3 is kept for code preservation but hidden to maintain the clean dark aesthetic */
+    .shape-3 {
+        display: none;
+    }
+
+    @keyframes drift {
+
+        0%,
+        100% {
+            transform: translate(0, 0) scale(1);
+        }
+
+        50% {
+            transform: translate(20px, -20px) scale(1.1);
+        }
+    }
+
+    .login-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 16px;
+        width: fit-content;
+        position: relative;
+        z-index: 1;
+        margin-bottom: 64px;
+    }
+
+    .login-brand .brand-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: #10b981;
+    }
+
+    .login-brand h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: -0.02em;
+        margin: 0;
+    }
+
+    .login-brand span {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #10b981;
+        margin-top: 4px;
+    }
+
+    .login-hero {
+        position: relative;
+        z-index: 1;
+    }
+
+    .login-hero h2 {
+        font-size: 40px;
+        font-weight: 800;
+        color: #f8fafc;
+        line-height: 1.15;
+        letter-spacing: -0.03em;
+        margin: 0 0 24px;
+    }
+
+    .login-hero h2 span {
+        color: #34d399;
+    }
+
+    .login-hero p {
+        font-size: 16px;
+        line-height: 1.7;
+        color: #94a3b8;
+        max-width: 440px;
+        margin: 0 0 40px;
+    }
+
+    .feature-list {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        max-width: 440px;
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #e2e8f0;
+    }
+
+    .feature-item i {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #34d399;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    /* Right Panel (Light Form) */
+    .login-right {
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 48px;
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 380px;
+    }
+
+    .login-card-header {
+        margin-bottom: 40px;
+    }
+
+    .login-card-header h2 {
+        font-size: 28px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 12px;
+        letter-spacing: -0.02em;
+    }
+
+    .login-card-header p {
+        font-size: 15px;
+        color: #64748b;
+        margin: 0;
+    }
+
+    .input-group {
+        margin-bottom: 24px;
+    }
+
+    .input-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        color: #475569;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .input-wrap {
+        position: relative;
+    }
+
+    .input-wrap i {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 16px;
+        transition: color 0.2s ease;
+    }
+
+    .input-wrap input {
+        width: 100%;
+        padding: 14px 16px 14px 44px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 15px;
+        background: #f8fafc;
+        color: #0f172a;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+
+    .input-wrap input::placeholder {
+        color: #cbd5e1;
+    }
+
+    .input-wrap input:focus {
+        outline: none;
+        border-color: #10b981;
+        background: #ffffff;
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    }
+
+    .input-wrap input:focus+i,
+    .input-wrap:focus-within i {
+        color: #10b981;
+    }
+
+    .login-btn {
+        width: 100%;
+        padding: 14px;
+        margin-top: 8px;
+        border: none;
+        border-radius: 8px;
+        background: #0f172a;
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        transition: all 0.2s ease;
+    }
+
+    .login-btn:hover {
+        background: #10b981;
+        transform: translateY(-1px);
+    }
+
+    .login-divider {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin: 32px 0;
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+    }
+
+    .login-divider::before,
+    .login-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #e2e8f0;
+    }
+
+    .login-demo {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 16px;
+        text-align: center;
+    }
+
+    .login-demo strong {
+        display: block;
+        font-size: 12px;
+        color: #475569;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .login-demo div {
+        font-size: 13px;
+        color: #64748b;
+    }
+
+    .login-demo code {
+        background: #ecfdf5;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        color: #059669;
+        font-weight: 700;
+        border: 1px solid #a7f3d0;
+    }
+
+    .login-footer {
+        position: fixed;
+        bottom: 24px;
+        right: 48px;
+        font-size: 12px;
+        color: #94a3b8;
+        z-index: 2;
+    }
+
+    @media (max-width: 960px) {
+        .login-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .login-left {
+            min-height: 40vh;
+            padding: 32px;
+            justify-content: flex-start;
+        }
+
+        .login-brand {
+            margin-bottom: 32px;
+        }
+
+        .login-hero h2 {
+            font-size: 28px;
+        }
+
+        .login-hero p {
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .feature-list {
+            display: none;
+        }
+
+        /* Hide features on mobile for brevity */
+        .login-right {
+            padding: 32px;
+        }
+
+        .login-footer {
+            display: none;
+        }
+    }
+</style>
+
+<div class="login-scene" aria-hidden="true">
+    <div class="login-shape shape-1"></div>
+    <div class="login-shape shape-2"></div>
+    <div class="login-shape shape-3"></div>
+</div>
+
+<div class="login-grid">
+    <div class="login-left">
+        <div class="login-brand">
+            <div class="brand-icon">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <h1>Aura VMS</h1>
+                <span>Vision Intelligence</span>
+            </div>
+        </div>
+
+        <div class="login-hero">
+            <h2>Monitor smarter. <span>Know every visitor.</span></h2>
+            <p>AI-powered video analytics that tracks visitors, classifies attire, detects motion, and delivers
+                real-time insights from every camera.</p>
+
+            <div class="feature-list">
+                <div class="feature-item"><i class="fa-solid fa-video"></i> Live monitoring</div>
+                <div class="feature-item"><i class="fa-solid fa-users"></i> Visitor tracking</div>
+                <div class="feature-item"><i class="fa-solid fa-chart-pie"></i> Visitor Analytics</div>
+                <div class="feature-item"><i class="fa-solid fa-bell"></i> Instant alerts</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="login-right">
+        <div class="login-card">
+            <div class="login-card-header">
+                <h2>Welcome back</h2>
+                <p>Enter your credentials to access the dashboard.</p>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                {% if error %}
+                <div style="background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 12px 16px; border-radius: 8px; font-size: 14px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+                </div>
+                {% endif %}
+                <div class="input-group">
+                    <label for="username">Username</label>
+                    <div class="input-wrap">
+                        <i class="fa-regular fa-user"></i>
+                        <input type="text" id="username" name="username" required placeholder="admin" autofocus>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="password" name="password" required placeholder="••••••••">
+                    </div>
+                </div>
+
+                <button type="submit" class="login-btn">
+                    <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                    Sign In
+                </button>
+            </form>
+
+            <div class="login-divider">Demo Access</div>
+
+            <div class="login-demo">
+                <strong>Try with demo credentials</strong>
+                <div style="font-size: 13px; color: #64748b;">
+                    Username: <code>admin</code> &nbsp; Password: <code>admin</code>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="login-footer">
+    © 2026 Aura VMS. All rights reserved.
+</div>
+{% endblock %}

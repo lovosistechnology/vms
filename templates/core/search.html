@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+
+{% block title %}Search by Photo{% endblock %}
+{% block page_title %}Search Person by Photo{% endblock %}
+{% block page_subtitle %}Upload any target photo to find matching person profiles across all cameras using AI similarity search{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 32px;
+        box-shadow: var(--shadow-md);
+        margin-bottom: 32px;
+    }
+
+    .drop-zone {
+        border: 2px dashed #cbd5e1;
+        border-radius: var(--radius-md);
+        padding: 40px 20px;
+        text-align: center;
+        background: var(--bg);
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+        border-color: var(--primary);
+        background: rgba(16, 185, 129, 0.05);
+    }
+
+    .drop-zone i {
+        font-size: 42px;
+        color: var(--muted);
+        margin-bottom: 12px;
+    }
+
+    .results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+    }
+
+    .result-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .similarity-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: var(--radius-full);
+        font-size: 13px;
+        font-weight: 700;
+        background: #ecfdf5;
+        color: #059669;
+    }
+
+    /* Modal & Form Component Styles */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 2000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.open {
+        display: flex;
+        opacity: 1;
+    }
+
+    .modal-card {
+        width: 100%;
+        max-width: 520px;
+        background: var(--card);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-xl);
+        transform: scale(0.95);
+        transition: transform 0.3s ease;
+        overflow: hidden;
+    }
+
+    .modal-overlay.open .modal-card {
+        transform: scale(1);
+    }
+
+    .modal-header {
+        padding: 22px 24px;
+        border-bottom: 1px solid var(--border-light);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h3 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-heading);
+        margin: 0;
+    }
+
+    .close-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: var(--radius-full);
+        border: none;
+        background: var(--bg);
+        color: var(--muted);
+        font-size: 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+    }
+
+    .close-btn:hover {
+        background: var(--danger-light);
+        color: var(--danger);
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-heading);
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-size: 14px;
+        font-family: inherit;
+        background: var(--card);
+        color: var(--text);
+        transition: var(--transition);
+        box-sizing: border-box;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 11px 20px;
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: var(--transition);
+        white-space: nowrap;
+    }
+
+    .btn-primary {
+        background: #0f172a;
+        color: #fff;
+        box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.15);
+    }
+
+    .btn-primary:hover {
+        background: var(--primary);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background: var(--card);
+        color: var(--text-heading);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .btn-secondary:hover {
+        background: var(--bg);
+        border-color: #cbd5e1;
+    }
+
+    .btn-sm {
+        padding: 8px 14px;
+        font-size: 13px;
+        border-radius: var(--radius-sm);
+    }
+
+    /* Helper Utilities */
+    .d-flex { display: flex; align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-2 { gap: 8px; }
+    .text-muted { color: var(--muted); }
+    .empty-state { text-align: center; padding: 48px 24px; color: var(--muted); }
+    .empty-state i { font-size: 48px; margin-bottom: 16px; color: var(--border); }
+    .empty-state h3 { font-size: 16px; font-weight: 700; color: var(--text-heading); margin-bottom: 6px; }
+    .card-body { padding: 24px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="search-card">
+    <form method="post" enctype="multipart/form-data" action="{% url 'core:search_by_photo' %}">
+        {% csrf_token %}
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('photoInput').click()">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <h3 style="font-size: 18px; font-weight: 700; color: var(--text-heading); margin-bottom: 6px;">
+                Drag & Drop a photo here or click to browse
+            </h3>
+            <p style="font-size: 13px; color: var(--muted); margin: 0;">Supports JPG, PNG, WEBP images</p>
+            <input type="file" name="photo" id="photoInput" accept="image/*" style="display: none;" onchange="this.form.submit()">
+        </div>
+    </form>
+</div>
+
+{% if searched %}
+<div style="margin-bottom: 20px;">
+    <h2 style="font-size: 20px; font-weight: 700; color: var(--text-heading);">
+        Search Results ({{ results|length }} match{{ results|length|pluralize:"es" }} found)
+    </h2>
+</div>
+
+{% if results %}
+<div class="results-grid">
+    {% for item in results %}
+    {% with profile=item.profile %}
+    <div class="result-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <div>
+                <h3 style="font-size: 16px; font-weight: 700; margin: 0; color: var(--text-heading);">
+                    {% if profile.name %}{{ profile.name }}{% else %}Person #{{ profile.pk }}{% endif %}
+                </h3>
+                <span class="text-muted" style="font-size: 12px;">Camera: {{ profile.camera.name }}</span>
+            </div>
+            <span class="similarity-badge">
+                <i class="fa-solid fa-bolt"></i> {{ item.similarity_score }}% Match
+            </span>
+        </div>
+
+        <div style="font-size: 13px; margin-bottom: 14px; line-height: 1.6;">
+            <div><strong>Tag:</strong> <span class="badge" style="background: rgba(100,116,139,0.1);">{{ profile.get_person_type_display }}</span></div>
+            <div><strong>Lifetime Visits:</strong> {{ profile.visit_count }}</div>
+            <div><strong>First Seen:</strong> {{ profile.first_seen|date:"Y-m-d H:i" }}</div>
+            <div><strong>Last Seen:</strong> {{ profile.last_seen|date:"Y-m-d H:i" }}</div>
+            {% if profile.notes %}
+            <div style="margin-top: 6px; font-style: italic; color: var(--muted);">"{{ profile.notes }}"</div>
+            {% endif %}
+        </div>
+
+        <button type="button" class="btn btn-secondary btn-sm" style="width: 100%;"
+            data-pk="{{ profile.pk }}"
+            data-name="{{ profile.name }}"
+            data-type="{{ profile.person_type }}"
+            data-notes="{{ profile.notes }}"
+            onclick="openEditModalFromBtn(this)">
+            <i class="fa-solid fa-user-pen"></i> Edit Profile Tag & Notes
+        </button>
+    </div>
+    {% endwith %}
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fa-solid fa-user-slash"></i>
+    <h3>No matching profiles found</h3>
+    <p>Try uploading a clearer photo of the person.</p>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- Edit Person Profile Modal -->
+<div id="editProfileModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-user-pen text-muted" style="margin-right: 8px;"></i>Edit Person Identity Tag</h3>
+            <button type="button" class="close-btn" onclick="closeEditModal()">×</button>
+        </div>
+        <div class="card-body">
+            <form method="post" id="editProfileForm" action="">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="edit_name">Full Name / Label</label>
+                    <input type="text" name="name" id="edit_name" class="form-control" placeholder="e.g. John Doe">
+                </div>
+                <div class="form-group">
+                    <label for="edit_person_type">Profile Tag Classification</label>
+                    <select name="person_type" id="edit_person_type" class="form-control">
+                        <option value="regular">Regular Visitor</option>
+                        <option value="vip">VIP Customer</option>
+                        <option value="blacklist">Blacklisted Person</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit_notes">Notes / Security Alerts</label>
+                    <textarea name="notes" id="edit_notes" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="d-flex justify-between" style="margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openEditModalFromBtn(btn) {
+        if (!btn) return;
+        const pk = btn.getAttribute('data-pk');
+        const name = btn.getAttribute('data-name');
+        const type = btn.getAttribute('data-type');
+        const notes = btn.getAttribute('data-notes');
+        openEditModal(pk, name, type, notes);
+    }
+
+    function openEditModal(pk, name, type, notes) {
+        const modal = document.getElementById('editProfileModal');
+        const form = document.getElementById('editProfileForm');
+        form.action = `/person/${pk}/edit/`;
+        document.getElementById('edit_name').value = name || '';
+        document.getElementById('edit_person_type').value = type || 'regular';
+        document.getElementById('edit_notes').value = notes || '';
+        modal.classList.add('open');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editProfileModal').classList.remove('open');
+    }
+
+    // Drag and drop event handling
+    const dropZone = document.getElementById('dropZone');
+    const photoInput = document.getElementById('photoInput');
+
+    if (dropZone && photoInput) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.remove('dragover');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files.length > 0) {
+                photoInput.files = dt.files;
+                photoInput.form.submit();
+            }
+        });
+    }
+
+    // Close modal when clicking outside modal-card backdrop
+    window.addEventListener('click', (e) => {
+        const modal = document.getElementById('editProfileModal');
+        if (e.target === modal) {
+            closeEditModal();
+        }
+    });
+</script>
+{% endblock %}

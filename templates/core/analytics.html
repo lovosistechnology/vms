@@ -1,0 +1,571 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics{% endblock %}
+{% block page_title %}Analytics{% endblock %}
+{% block page_subtitle %}Visitor trends, attire segmentation, and camera performance{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    /* Button Styles - LocusVMS Aesthetic */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 11px 20px;
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: var(--transition);
+        white-space: nowrap;
+    }
+
+    .btn i {
+        font-size: 15px;
+    }
+
+    .btn-primary {
+        background: #0f172a;
+        /* Dark slate for primary actions */
+        color: #fff;
+        box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.15);
+    }
+
+    .btn-primary:hover {
+        background: var(--primary);
+        /* Turns emerald on hover */
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px -4px var(--primary-glow);
+    }
+
+    .btn-success {
+        background: var(--primary);
+        /* Emerald green */
+        color: #fff;
+        box-shadow: 0 4px 12px -2px var(--primary-glow);
+    }
+
+    .btn-success:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px -4px var(--primary-glow);
+    }
+
+    .btn-secondary {
+        background: var(--card);
+        color: var(--text-heading);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .btn-secondary:hover {
+        background: var(--bg);
+        border-color: #cbd5e1;
+    }
+
+    .btn-sm {
+        padding: 8px 14px;
+        font-size: 13px;
+        border-radius: var(--radius-sm);
+    }
+
+    /* Card Styles */
+    .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        transition: var(--transition);
+    }
+
+    .card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+
+    .card-header {
+        padding: 22px 24px;
+        border-bottom: 1px solid var(--border-light);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .card-header h2 {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-heading);
+        margin: 0;
+    }
+
+    .card-body {
+        padding: 24px;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 20px;
+        margin-bottom: 28px;
+    }
+
+    .stat-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        margin-bottom: 10px;
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--text-heading);
+        line-height: 1.1;
+        margin-bottom: 6px;
+    }
+
+    .stat-meta {
+        font-size: 13px;
+        color: var(--muted);
+    }
+
+    .stat-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+
+    /* Updated Icon Colors to match Emerald Theme */
+    .stat-icon.primary {
+        background: rgba(16, 185, 129, 0.12);
+        color: var(--primary);
+    }
+
+    .stat-icon.info {
+        background: rgba(14, 165, 233, 0.12);
+        color: #0284c7;
+    }
+
+    .stat-icon.success {
+        background: var(--success-light);
+        color: var(--success);
+    }
+
+    .stat-icon.warning {
+        background: rgba(245, 158, 11, 0.12);
+        color: #d97706;
+    }
+
+    .stat-icon.danger {
+        background: var(--danger-light);
+        color: var(--danger);
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-bottom: 28px;
+        background: var(--card);
+        padding: 16px 20px;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .filter-bar label {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-heading);
+    }
+
+    .form-control {
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--bg);
+        color: var(--text);
+        font-size: 14px;
+        outline: none;
+        transition: var(--transition);
+    }
+
+    .form-control:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    /* Chart Grid */
+    .chart-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .chart-wrapper {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+
+    /* Utilities */
+    .text-muted {
+        color: var(--muted);
+    }
+
+    .d-flex {
+        display: flex;
+    }
+
+    .align-center {
+        align-items: center;
+    }
+
+    .gap-2 {
+        gap: 8px;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .chart-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block header_actions %}
+{% endblock %}
+
+{% block content %}
+<form method="get" class="filter-bar" id="filter-form">
+    <label for="range"><i class="fa-regular fa-calendar" style="margin-right: 6px;"></i>Date Range:</label>
+    <select name="range" id="range" class="form-control" style="width: auto; min-width: 160px;">
+        <option value="7days" {% if selected_range == '7days' %}selected{% endif %}>Last 7 days</option>
+        <option value="30days" {% if selected_range == '30days' %}selected{% endif %}>Last 30 days</option>
+        <option value="90days" {% if selected_range == '90days' %}selected{% endif %}>Last 90 days</option>
+        <option value="custom" {% if selected_range == 'custom' %}selected{% endif %}>Custom</option>
+    </select>
+
+    <div id="custom-dates" class="d-flex align-center gap-2 {% if selected_range != 'custom' %}hidden{% endif %}">
+        <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+        <span class="text-muted">to</span>
+        <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-sm">
+        <i class="fa-solid fa-filter"></i> Apply
+    </button>
+    <a href="{% url 'core:export_analytics_pdf' %}?range={{ selected_range }}&start_date={{ start_date }}&end_date={{ end_date }}"
+        class="btn btn-success btn-sm" style="margin-left: auto;">
+        <i class="fa-solid fa-file-arrow-down"></i> PDF Report
+    </a>
+</form>
+
+<div class="stats-grid">
+    <div class="stat-card info">
+        <div class="stat-header">
+            <div>
+                <div class="stat-label">Total Visits</div>
+                <div class="stat-value">{{ total_visits }}</div>
+                <div class="stat-meta">In selected period</div>
+            </div>
+            <div class="stat-icon info"><i class="fa-solid fa-users"></i></div>
+        </div>
+    </div>
+    <div class="stat-card success">
+        <div class="stat-header">
+            <div>
+                <div class="stat-label">New Persons</div>
+                <div class="stat-value">{{ new_persons }}</div>
+                <div class="stat-meta">First-time profiles</div>
+            </div>
+            <div class="stat-icon success"><i class="fa-solid fa-user-plus"></i></div>
+        </div>
+    </div>
+    <div class="stat-card warning">
+        <div class="stat-header">
+            <div>
+                <div class="stat-label">Avg Dwell Time</div>
+                <div class="stat-value">{{ avg_dwell_time }}s</div>
+                <div class="stat-meta">Per visit</div>
+            </div>
+            <div class="stat-icon warning"><i class="fa-solid fa-clock"></i></div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-header">
+            <div>
+                <div class="stat-label">Total Dwell Time</div>
+                <div class="stat-value">{{ total_dwell_time }}s</div>
+                <div class="stat-meta">All visits combined</div>
+            </div>
+            <div class="stat-icon primary"><i class="fa-solid fa-hourglass-half"></i></div>
+        </div>
+    </div>
+    <div class="stat-card danger">
+        <div class="stat-header">
+            <div>
+                <div class="stat-label">Peak Hour</div>
+                <div class="stat-value">{% if peak_hour is not none %}{{ peak_hour|stringformat:"02d" }}:00{% else %}N/A{% endif %}</div>
+                <div class="stat-meta">Highest traffic</div>
+            </div>
+            <div class="stat-icon danger"><i class="fa-solid fa-bolt"></i></div>
+        </div>
+    </div>
+    <div class="stat-card info">
+        <div class="stat-header">
+            <div>
+                <div class="stat-label">Online Cameras</div>
+                <div class="stat-value">{{ active_cameras }}/{{ total_cameras }}</div>
+                <div class="stat-meta">Currently active</div>
+            </div>
+            <div class="stat-icon info"><i class="fa-solid fa-video"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="chart-grid"
+    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; margin-bottom: 24px;">
+    <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-header">
+            <h2><i class="fa-solid fa-chart-line text-muted" style="margin-right: 8px;"></i>Visits Over Time</h2>
+        </div>
+        <div class="card-body">
+            <div class="chart-wrapper">
+                <canvas id="visitsDateChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa-solid fa-chart-column text-muted" style="margin-right: 8px;"></i>Visits by Camera</h2>
+        </div>
+        <div class="card-body">
+            <div class="chart-wrapper">
+                <canvas id="visitsCameraChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa-solid fa-clock text-muted" style="margin-right: 8px;"></i>Visits by Hour</h2>
+        </div>
+        <div class="card-body">
+            <div class="chart-wrapper">
+                <canvas id="visitsHourChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa-solid fa-venus-mars text-muted" style="margin-right: 8px;"></i>Gender Distribution</h2>
+        </div>
+        <div class="card-body">
+            <div class="chart-wrapper">
+                <canvas id="genderChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa-solid fa-shirt text-muted" style="margin-right: 8px;"></i>Attire Distribution</h2>
+        </div>
+        <div class="card-body">
+            <div class="chart-wrapper">
+                <canvas id="attireChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ visits_by_date|json_script:"visitsByDate" }}
+{{ visits_by_camera|json_script:"visitsByCamera" }}
+{{ visits_by_hour|json_script:"visitsByHour" }}
+{{ gender_counts|json_script:"genderCounts" }}
+{{ attire_counts|json_script:"attireCounts" }}
+{{ gender_labels|json_script:"genderLabels" }}
+{{ attire_labels|json_script:"attireLabels" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const visitsByDate = JSON.parse(document.getElementById('visitsByDate').textContent);
+    const visitsByCamera = JSON.parse(document.getElementById('visitsByCamera').textContent);
+    const visitsByHour = JSON.parse(document.getElementById('visitsByHour').textContent);
+    const genderCounts = JSON.parse(document.getElementById('genderCounts').textContent);
+    const attireCounts = JSON.parse(document.getElementById('attireCounts').textContent);
+    const genderLabels = JSON.parse(document.getElementById('genderLabels').textContent);
+    const attireLabels = JSON.parse(document.getElementById('attireLabels').textContent);
+
+    function labelOrDefault(map, key) {
+        return map[key] || key || 'Unknown';
+    }
+
+    // Updated Chart Colors to match the LocusVMS Emerald theme
+    const chartColors = {
+        primary: '#10b981',           // Emerald
+        primaryLight: 'rgba(16, 185, 129, 0.15)',
+        secondary: '#0ea5e9',         // Light Blue
+        success: '#10b981',           // Emerald
+        warning: '#f59e0b',           // Amber
+        danger: '#ef4444',            // Red
+        muted: '#94a3b8'              // Slate
+    };
+
+    new Chart(document.getElementById('visitsDateChart'), {
+        type: 'line',
+        data: {
+            labels: visitsByDate.map(v => v.date),
+            datasets: [{
+                label: 'Visits',
+                data: visitsByDate.map(v => v.count),
+                borderColor: chartColors.primary,
+                backgroundColor: chartColors.primaryLight,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: chartColors.primary,
+                pointBorderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(226, 232, 240, 0.6)' } }, x: { grid: { display: false } } }
+        }
+    });
+
+    new Chart(document.getElementById('visitsCameraChart'), {
+        type: 'bar',
+        data: {
+            labels: visitsByCamera.map(v => v.camera__name),
+            datasets: [{
+                label: 'Visits',
+                data: visitsByCamera.map(v => v.count),
+                backgroundColor: chartColors.primary,
+                borderRadius: 8,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(226, 232, 240, 0.6)' } }, x: { grid: { display: false } } }
+        }
+    });
+
+    new Chart(document.getElementById('visitsHourChart'), {
+        type: 'bar',
+        data: {
+            labels: visitsByHour.map(v => `${String(v.hour).padStart(2, '0')}:00`),
+            datasets: [{
+                label: 'Visits',
+                data: visitsByHour.map(v => v.count),
+                backgroundColor: chartColors.warning,
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(226, 232, 240, 0.6)' } }, x: { grid: { display: false } } }
+        }
+    });
+
+    new Chart(document.getElementById('genderChart'), {
+        type: 'doughnut',
+        data: {
+            labels: genderCounts.map(g => labelOrDefault(genderLabels, g.gender)),
+            datasets: [{
+                data: genderCounts.map(g => g.count),
+                backgroundColor: [chartColors.primary, '#ec4899', chartColors.muted],
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } }
+        }
+    });
+
+    new Chart(document.getElementById('attireChart'), {
+        type: 'doughnut',
+        data: {
+            labels: attireCounts.map(a => labelOrDefault(attireLabels, a.attire)),
+            datasets: [{
+                data: attireCounts.map(a => a.count),
+                backgroundColor: [chartColors.primary, '#ec4899', chartColors.secondary, chartColors.muted],
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } }
+        }
+    });
+
+    const rangeSelect = document.getElementById('range');
+    const customDates = document.getElementById('custom-dates');
+    rangeSelect.addEventListener('change', () => {
+        if (rangeSelect.value === 'custom') {
+            customDates.classList.remove('hidden');
+        } else {
+            customDates.classList.add('hidden');
+        }
+    });
+</script>
+{% endblock %}
